@@ -115,8 +115,8 @@ r3 = 64  # for the loop
 
 while r1 < r3:
     # move the byte
-    r0 = movfs(0) # we save the address as movfs_addr
-    movt(192, r0)   # we save the address as movt_addr
+    r0 = movfs(0) # we save this instruction's address as movfs_addr
+    movt(192, r0) # we save this instruction's address as movt_addr
 
     # increase the counters
     r1 += 1
