@@ -77,12 +77,12 @@ Summing up, the pseudocode for what we have to do looks like this:
 
 ```py3
 # bruteforce the key
-r0 = 0
-r3 = 1
+R0 = 0
+R3 = 1
 
-while r3 == 1:
+while R3 == 1:
     ent()
-    r0 += 1
+    R0 += 1
 
 # copy the flag from safe_rom to ram
 for i in range(64):
@@ -99,32 +99,32 @@ This is the final pseudocode.
 
 ```py3
 # bruteforce the key
-r0 = 0 # the key value
-r2 = 1 # for the loop
-r3 = 1 # emode (0 - yes, 1 - no)
+R0 = 0 # the key value
+R2 = 1 # for the loop
+R3 = 1 # emode (0 - yes, 1 - no)
 
-while r3 == r2:
+while R3 == R2:
     ent()
-    r0 += 1
+    R0 += 1
 
 # copy the flag from safe_rom to ram
-r0 = 0   # for copying bytes
-r1 = 0   # safe_rom addr (for movfs)
-r2 = 192 # ram addr (for movt)
-r3 = 64  # for the loop
+R0 = 0   # for copying bytes
+R1 = 0   # safe_rom addr (for movfs)
+R2 = 192 # ram addr (for movt)
+R3 = 64  # for the loop
 
-while r1 < r3:
+while R1 < R3:
     # move the byte
-    r0 = movfs(0) # we save this instruction's address as movfs_addr
-    movt(192, r0) # we save this instruction's address as movt_addr
+    R0 = movfs(0) # we save this instruction's address as movfs_addr
+    movt(192, R0) # we save this instruction's address as movt_addr
 
     # increase the counters
-    r1 += 1
-    r2 += 1
+    R1 += 1
+    R2 += 1
 
     # modify the MOVFS/MOVT instructions (only the 2nd byte as it holds the address)
-    movt(movfs_addr + 1, r1)
-    movt(movt + 1, r2)
+    movt(movfs_addr + 1, R1)
+    movt(movt + 1, R2)
 
 # loop in place so that we interpret the flag as code (and potentially corrupt something)
 while True:
