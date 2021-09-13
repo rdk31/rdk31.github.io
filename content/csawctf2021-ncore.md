@@ -48,7 +48,7 @@ reg [31:0] key [0:0];
 reg emode;
 ```
 
-And the "main" function:
+And the "main function":
 
 ```
 initial
@@ -93,7 +93,7 @@ while True:
     pass
 ```
 
-The problem is, however, that the MOVFS/MOVT instructions direct addressing, there's no (easy at least) way to use a register's value. The good news is that the address it loads/stores to is always the 2nd byte in the instruction, so what we have to do is self-modifying code.
+The problem is, however, that the MOVFS/MOVT instructions only support direct addressing, so what we have to do is self-modifying code.
 
 This is the final pseudocode.
 
