@@ -3,7 +3,7 @@ title = "CSAW CTF Qualification Round 2021 - ncore"
 date = 2021-09-13
 [taxonomies]
 categories = ["ctfs"]
-tags = ["csawctf2021", "fpga"]
+tags = ["csawctf2021", "reverse engineering", "computer architecture", "python", "verilog"]
 +++
 
 # ncore

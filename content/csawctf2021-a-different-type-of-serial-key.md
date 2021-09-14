@@ -15,7 +15,6 @@ Attached are serial captures of two different uploads to an embedded device. One
 Author: CISA
 
 [capture.sal](/files/csawctf2021/a-different-type-of-serial-key/capture.sal)
-
 [key.sal](/files/csawctf2021/a-different-type-of-serial-key/key.sal)
 
 ## Solution

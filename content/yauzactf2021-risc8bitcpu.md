@@ -3,7 +3,7 @@ title = "YauzaCTF 2021 - RISC 8bit CPU"
 date = 2021-08-31
 [taxonomies]
 categories = ["ctfs"]
-tags = ["yauzactf2021", "python"]
+tags = ["yauzactf2021", "computer architecture", "python"]
 +++
 
 # Task description
@@ -11,7 +11,6 @@ tags = ["yauzactf2021", "python"]
 The SFT0 CPU is a secure processor designed to store encryption key. Find out how the processor works and get the key.
 
 [manual.pdf](/files/yauzactf2021/risc8bitcpu/manual.pdf)
-
 [rom.bin](/files/yauzactf2021/risc8bitcpu/rom.bin)
 
 # Solution
@@ -20,9 +19,7 @@ This is a simple CPU architecture containing 3 8bit registers, a pc register and
 
 And this is the emulator.
 
-```python
-#!/usr/bin/env python
-
+```py3
 import re
 
 pc = 0x1000

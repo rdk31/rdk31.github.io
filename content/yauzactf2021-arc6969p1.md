@@ -3,7 +3,7 @@ title = "YauzaCTF 2021 - ARC6969 P.1"
 date = 2021-08-31
 [taxonomies]
 categories = ["ctfs"]
-tags = ["yauzactf2021", "python"]
+tags = ["yauzactf2021", "computer architecture", "python"]
 +++
 
 # Task description
@@ -11,7 +11,6 @@ tags = ["yauzactf2021", "python"]
 The ARC6969 is an old and forgotten architecture used in a military computers during Cold War. Although we don't have the computers anymore, we got CPU manual and a few programs.
 
 [manual_1.pdf](/files/yauzactf2021/arc6969p1/manual_1.pdf)
-
 [rom_1.bin](/files/yauzactf2021/arc6969p1/rom_1.bin)
 
 # Solution
@@ -20,9 +19,7 @@ Now this CPU architecture is way more complicated than the first emulation task.
 
 This is the code.
 
-```python
-#!/usr/bin/env python
-
+```py3
 import pygame
 
 debug = False
@@ -501,7 +498,7 @@ Basically looping over an encrypted string doing addition, xor and subtraction o
 
 I dumped the encrypted string (lines 27 and 28) and bruteforced the key using this script.
 
-```python
+```py3
 from itertools import product
 from string import printable
 
@@ -532,8 +529,4 @@ for key in keywords:
         pass
 ```
 
-Running the script prints out the flag:
-
-```
-Y35 YauzaCTF{H3ll0_fr0m_1969_k1dd0}
-```
+Running the script prints out the flag: `YauzaCTF{H3ll0_fr0m_1969_k1dd0}`

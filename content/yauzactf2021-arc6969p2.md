@@ -3,7 +3,7 @@ title = "YauzaCTF 2021 - ARC6969 P.2"
 date = 2021-08-31
 [taxonomies]
 categories = ["ctfs"]
-tags = ["yauzactf2021", "python"]
+tags = ["yauzactf2021", "computer architecture", "python"]
 +++
 
 # Task description
@@ -11,7 +11,6 @@ tags = ["yauzactf2021", "python"]
 The ARC6969 is an old and forgotten architecture used in a military computers during Cold War. Although we don't have the computers anymore, we got CPU manual and a few programs.
 
 [manual_2.pdf](/files/yauzactf2021/arc6969p2/manual_2.pdf)
-
 [rom_2.bin](/files/yauzactf2021/arc6969p2/rom_2.bin)
 
 # Solution
@@ -20,9 +19,7 @@ Now this CPU architecture is way more complicated than the first emulation task.
 
 This is the code.
 
-```python
-#!/usr/bin/env python
-
+```py3
 import pygame
 
 debug = False
