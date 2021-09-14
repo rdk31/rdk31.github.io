@@ -16,7 +16,7 @@ Brush off your Flirbgarple textbooks!
 
 ## Solution
 
-The application asks 3 questions and while the first two are implemented correctly the 3rd uses `gets`. So, we have to correctly answer to the first two questions and then just do a simple buffer overflow. In addition, there's a function called print_flag which prints the flag.
+The application asks 3 questions and while the first two are implemented correctly the 3rd uses `gets`. So, we have to correctly answer to the first two questions and then just do a simple stack buffer overflow. In addition, there's a function called print_flag which prints the flag.
 
 ```c
 undefined8 main(void)

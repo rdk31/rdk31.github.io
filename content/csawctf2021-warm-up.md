@@ -112,7 +112,7 @@ void backdoor(void)
 }
 ```
 
-So, the password checking thing is a diversion, what we're really interested in is the fact that the application uses `gets` to read the line. Buffer overflow!
+So, the password checking thing is a diversion, what we're really interested in is the fact that the application uses `gets` to read the line. Stack buffer overflow!
 
 Now, to the exploitation. First, generate a cyclic pattern a bit longer than the buffer `gets` writes to:
 
