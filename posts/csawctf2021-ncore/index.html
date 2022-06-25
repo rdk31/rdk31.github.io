@@ -1,0 +1,168 @@
+<!doctype html><html><head><meta charset=UTF-8><meta content="IE=edge" http-equiv=X-UA-Compatible><meta content="width=device-width,initial-scale=1.0" name=viewport><title> rdk31's blog </title><link href=https://rdk31.com/fonts.css rel=stylesheet><script async data-goatcounter=https://rdk31.goatcounter.com/count src=https://rdk31.com/js/count.js></script><noscript><img src="https://rdk31.goatcounter.com//count?p=/posts/csawctf2021-ncore/&t=CSAW CTF Qualification Round 2021 - ncore"></noscript><link title="rdk31's blog" href=https://rdk31.com/atom.xml rel=alternate type=application/atom+xml><link href=https://rdk31.com/theme/light.css rel=stylesheet><link media="(prefers-color-scheme: dark)" href=https://rdk31.com/theme/dark.css rel=stylesheet><link href=https://rdk31.com/main.css media=screen rel=stylesheet><body><div class=content><header><div class=main><a href=https://rdk31.com>rdk31's blog</a></div><nav><a style="margin-left: 0.7em" href=/posts>/posts</a><a style="margin-left: 0.7em" href=/tags>/tags</a><a style="margin-left: 0.7em" href=/about>/about</a></nav></header><main><article><div class=title><div class=page-header>CSAW CTF Qualification Round 2021 - ncore<span style="font-size: 1.6em" class=primary-color>.</span></div><div class=meta>Posted on 2021-09-13</div></div><section class=body><h1 id=ncore>ncore</h1><h2 id=task-description>Task description</h2><p>We have a very safe core with a very safe enclave.<p><a href=files/ncore_tb.v>ncore_tb.v</a> <a href=files/server.py>server.py</a><h2 id=solution>Solution</h2><p>This is a tiny cpu core with a safe enclave containing private data. Now, let's see the details.<p>We have some instructions:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>`define ADD  4'd0
+</span><span>`define SUB  4'd1
+</span><span>`define AND  4'd2
+</span><span>`define OR   4'd3
+</span><span>`define RES 4'd4
+</span><span>`define MOVF 4'd5
+</span><span>`define MOVT 4'd6
+</span><span>`define ENT  4'd7
+</span><span>`define EXT  4'd8
+</span><span>`define JGT  4'd9
+</span><span>`define JEQ  4'd10
+</span><span>`define JMP  4'd11
+</span><span>`define INC  4'd12
+</span><span>`define MOVFS 4'd13
+</span></code></pre><p>Memory, registers:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>reg [7:0] safe_rom [0:255];
+</span><span>reg [7:0] ram [0:255];
+</span><span>reg [31:0] regfile [0:3];
+</span><span>reg [31:0] key [0:0];
+</span><span>reg emode;
+</span></code></pre><p>And the "main function":<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>initial
+</span><span>begin: initial_block
+</span><span>    // $monitor(,$time,": R0: %d,R1: %d,R2: %d,R3: %d",regfile[0],regfile[1],regfile[2],regfile[3]);
+</span><span>    init_regs();
+</span><span>    emode = 0;
+</span><span>    set_key();
+</span><span>    // $display("key: %d",key[0]);
+</span><span>    load_safeROM();
+</span><span>    load_ram();
+</span><span>    // $display("A %h, B: %h",safe_rom[0],safe_rom[1]);
+</span><span>    #1500000;
+</span><span>    print_res();
+</span><span>    $finish;
+</span><span>end :initial_block
+</span></code></pre><p>What it does is it firstly zeros the registers and the special register called emode. Then it loads the key with a 32 bit /dev/urandom value, loads the flag.hex to safe_rom and ram.hex to ram. After that, it runs the code for some time and after that it prints out the last 64 bytes of the ram.<p>So what we have to do is just copy the safe_rom to the ram to read the flag! However, the instruction we have to use, MOVFS, only works when emode is 1 and to do that using the instruction ENT, we have to guess the bottom 14 bits of the random key.<p>Summing up, the pseudocode for what we have to do looks like this:<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#65737e;># bruteforce the key
+</span><span>R0 = </span><span style=color:#d08770;>0
+</span><span>R3 = </span><span style=color:#d08770;>1
+</span><span>
+</span><span style=color:#b48ead;>while </span><span>R3 == </span><span style=color:#d08770;>1</span><span>:
+</span><span>    </span><span style=color:#bf616a;>ent</span><span>()
+</span><span>    R0 += </span><span style=color:#d08770;>1
+</span><span>
+</span><span style=color:#65737e;># copy the flag from safe_rom to ram
+</span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#d08770;>64</span><span>):
+</span><span>    ram[</span><span style=color:#d08770;>192 </span><span>+ i] = safe_rom[i]
+</span><span>
+</span><span style=color:#65737e;># loop in place so that we don't execute the flag
+</span><span style=color:#b48ead;>while </span><span style=color:#d08770;>True</span><span>:
+</span><span>    </span><span style=color:#b48ead;>pass
+</span></code></pre><p>The problem is, however, that the MOVFS/MOVT instructions only support direct addressing, so what we have to do is self-modifying code.<p>This is the final pseudocode.<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#65737e;># bruteforce the key
+</span><span>R0 = </span><span style=color:#d08770;>0 </span><span style=color:#65737e;># the key value
+</span><span>R2 = </span><span style=color:#d08770;>1 </span><span style=color:#65737e;># for the loop
+</span><span>R3 = </span><span style=color:#d08770;>1 </span><span style=color:#65737e;># emode (0 - yes, 1 - no)
+</span><span>
+</span><span style=color:#b48ead;>while </span><span>R3 == R2:
+</span><span>    </span><span style=color:#bf616a;>ent</span><span>()
+</span><span>    R0 += </span><span style=color:#d08770;>1
+</span><span>
+</span><span style=color:#65737e;># copy the flag from safe_rom to ram
+</span><span>R0 = </span><span style=color:#d08770;>0   </span><span style=color:#65737e;># for copying bytes
+</span><span>R1 = </span><span style=color:#d08770;>0   </span><span style=color:#65737e;># safe_rom addr (for movfs)
+</span><span>R2 = </span><span style=color:#d08770;>192 </span><span style=color:#65737e;># ram addr (for movt)
+</span><span>R3 = </span><span style=color:#d08770;>64  </span><span style=color:#65737e;># for the loop
+</span><span>
+</span><span style=color:#b48ead;>while </span><span>R1 < R3:
+</span><span>    </span><span style=color:#65737e;># move the byte
+</span><span>    R0 = </span><span style=color:#bf616a;>movfs</span><span>(</span><span style=color:#d08770;>0</span><span>) </span><span style=color:#65737e;># we save this instruction's address as movfs_addr
+</span><span>    </span><span style=color:#bf616a;>movt</span><span>(</span><span style=color:#d08770;>192</span><span>, R0) </span><span style=color:#65737e;># we save this instruction's address as movt_addr
+</span><span>
+</span><span>    </span><span style=color:#65737e;># increase the counters
+</span><span>    R1 += </span><span style=color:#d08770;>1
+</span><span>    R2 += </span><span style=color:#d08770;>1
+</span><span>
+</span><span>    </span><span style=color:#65737e;># modify the MOVFS/MOVT instructions (only the 2nd byte as it holds the address)
+</span><span>    </span><span style=color:#bf616a;>movt</span><span>(movfs_addr + </span><span style=color:#d08770;>1</span><span>, R1)
+</span><span>    </span><span style=color:#bf616a;>movt</span><span>(movt + </span><span style=color:#d08770;>1</span><span>, R2)
+</span><span>
+</span><span style=color:#65737e;># loop in place so that we interpret the flag as code (and potentially corrupt something)
+</span><span style=color:#b48ead;>while </span><span style=color:#d08770;>True</span><span>:
+</span><span>    </span><span style=color:#b48ead;>pass
+</span></code></pre><p>The implementation:<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span>R0 = </span><span style=color:#d08770;>0
+</span><span>R1 = </span><span style=color:#d08770;>1
+</span><span>R2 = </span><span style=color:#d08770;>2
+</span><span>R3 = </span><span style=color:#d08770;>3
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>ent</span><span>():
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>7</span><span>, </span><span style=color:#d08770;>0</span><span>]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>add</span><span>(</span><span style=color:#bf616a;>r1</span><span>, </span><span style=color:#bf616a;>r2</span><span>, </span><span style=color:#bf616a;>r3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>0 </span><span>| (r1 << </span><span style=color:#d08770;>4</span><span>) | (r2 << </span><span style=color:#d08770;>6</span><span>), r3]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>inc</span><span>(</span><span style=color:#bf616a;>r</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>12 </span><span>| (r << </span><span style=color:#d08770;>4</span><span>), </span><span style=color:#d08770;>0</span><span>]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jeq</span><span>(</span><span style=color:#bf616a;>r1</span><span>, </span><span style=color:#bf616a;>r2</span><span>, </span><span style=color:#bf616a;>addr</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>10 </span><span>| (r1 << </span><span style=color:#d08770;>4</span><span>) | (r2 << </span><span style=color:#d08770;>6</span><span>), addr]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jgt</span><span>(</span><span style=color:#bf616a;>r1</span><span>, </span><span style=color:#bf616a;>r2</span><span>, </span><span style=color:#bf616a;>addr</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>9 </span><span>| (r1 << </span><span style=color:#d08770;>4</span><span>) | (r2 << </span><span style=color:#d08770;>6</span><span>), addr]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jmp</span><span>(</span><span style=color:#bf616a;>addr</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>11</span><span>, addr]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>movfs</span><span>(</span><span style=color:#bf616a;>r</span><span>, </span><span style=color:#bf616a;>addr</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>13 </span><span>| (r << </span><span style=color:#d08770;>4</span><span>), addr]
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>movt</span><span>(</span><span style=color:#bf616a;>addr</span><span>, </span><span style=color:#bf616a;>r</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>[</span><span style=color:#d08770;>6 </span><span>| (r << </span><span style=color:#d08770;>4</span><span>), addr]
+</span><span>
+</span><span>
+</span><span>code = []
+</span><span>
+</span><span style=color:#65737e;># bruteforce the key
+</span><span>
+</span><span style=color:#65737e;># set registers
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R3)
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R2)
+</span><span>
+</span><span style=color:#65737e;># the loop
+</span><span>bruteforce_loop = </span><span style=color:#96b5b4;>len</span><span>(code)
+</span><span>code += </span><span style=color:#bf616a;>ent</span><span>()
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R0)
+</span><span>code += </span><span style=color:#bf616a;>jeq</span><span>(R2, R3, bruteforce_loop)
+</span><span>
+</span><span>
+</span><span style=color:#65737e;># copy the flag from safe_rom to ram
+</span><span>
+</span><span style=color:#65737e;># set registers
+</span><span>code += </span><span style=color:#bf616a;>add</span><span>(R0, R1, R1)
+</span><span>code += </span><span style=color:#bf616a;>add</span><span>(R2, R1, R1)
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R3)
+</span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#d08770;>6</span><span>):
+</span><span>    code += </span><span style=color:#bf616a;>add</span><span>(R3, R3, R3)
+</span><span>code += </span><span style=color:#bf616a;>add</span><span>(R2, R2, R3)
+</span><span>code += </span><span style=color:#bf616a;>add</span><span>(R2, R2, R3)
+</span><span>code += </span><span style=color:#bf616a;>add</span><span>(R2, R2, R3)
+</span><span>
+</span><span style=color:#65737e;># the loop
+</span><span>copy_loop = </span><span style=color:#96b5b4;>len</span><span>(code)
+</span><span>movfs_addr = </span><span style=color:#96b5b4;>len</span><span>(code)
+</span><span>code += </span><span style=color:#bf616a;>movfs</span><span>(R0, </span><span style=color:#d08770;>0</span><span>)
+</span><span>movt_addr = </span><span style=color:#96b5b4;>len</span><span>(code)
+</span><span>code += </span><span style=color:#bf616a;>movt</span><span>(</span><span style=color:#d08770;>192</span><span>, R0)
+</span><span>
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R1)
+</span><span>code += </span><span style=color:#bf616a;>inc</span><span>(R2)
+</span><span>
+</span><span>code += </span><span style=color:#bf616a;>movt</span><span>(movfs_addr + </span><span style=color:#d08770;>1</span><span>, R1)
+</span><span>code += </span><span style=color:#bf616a;>movt</span><span>(movt_addr + </span><span style=color:#d08770;>1</span><span>, R2)
+</span><span>
+</span><span>code += </span><span style=color:#bf616a;>jgt</span><span>(R3, R1, copy_loop)
+</span><span>
+</span><span>
+</span><span style=color:#65737e;># the endless loop
+</span><span>code += </span><span style=color:#bf616a;>jmp</span><span>(</span><span style=color:#96b5b4;>len</span><span>(code))
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>with </span><span style=color:#96b5b4;>open</span><span>("</span><span style=color:#a3be8c;>ram.hex</span><span>", "</span><span style=color:#a3be8c;>wb</span><span>") </span><span style=color:#b48ead;>as </span><span>f:
+</span><span>    </span><span style=color:#b48ead;>for </span><span>c </span><span style=color:#b48ead;>in </span><span>code:
+</span><span>        f.</span><span style=color:#bf616a;>write</span><span>(</span><span style=color:#b48ead;>f</span><span>"{c</span><span style=color:#d08770;>:x</span><span>} ".</span><span style=color:#bf616a;>encode</span><span>())
+</span></code></pre><p>And the flag: <code>flag{d0nT_mESs_wiTh_tHe_sChLAmi}</code></section></article></main><div class=post-footer><div class=post-tags>tags: <a href=https://rdk31.com/tags/ctf/>#ctf</a><a href=https://rdk31.com/tags/fpga/>#fpga</a></div><div class=post-nav><a class=previous href=https://rdk31.com/posts/csawctf2021-warm-up/>‹ CSAW CTF Qualification Round 2021 - warm-up</a><a class=next href=https://rdk31.com/posts/csawctf2021-a-different-type-of-serial-key/>CSAW CTF Qualification Round 2021 - A Different Type of Serial Key ›</a></div></div></div>

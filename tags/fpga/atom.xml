@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+	<title>rdk31&#x27;s blog - fpga</title>
+	<link href="https://rdk31.com/tags/fpga/atom.xml" rel="self" type="application/atom+xml"/>
+  <link href="https://rdk31.com"/>
+	<generator uri="https://www.getzola.org/">Zola</generator>
+	<updated>2021-09-13T00:00:00+00:00</updated>
+	<id>https://rdk31.com/tags/fpga/atom.xml</id>
+	<entry xml:lang="en">
+		<title>CSAW CTF Qualification Round 2021 - ncore</title>
+		<published>2021-09-13T00:00:00+00:00</published>
+		<updated>2021-09-13T00:00:00+00:00</updated>
+		<link href="https://rdk31.com/posts/csawctf2021-ncore/" type="text/html"/>
+		<id>https://rdk31.com/posts/csawctf2021-ncore/</id>
+		<content type="html">&lt;h1 id=&quot;ncore&quot;&gt;ncore&lt;&#x2F;h1&gt;
+&lt;h2 id=&quot;task-description&quot;&gt;Task description&lt;&#x2F;h2&gt;
+&lt;p&gt;We have a very safe core with a very safe enclave.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;files&#x2F;ncore_tb.v&quot;&gt;ncore_tb.v&lt;&#x2F;a&gt;
+&lt;a href=&quot;files&#x2F;server.py&quot;&gt;server.py&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;&#x2F;h2&gt;
+&lt;p&gt;This is a tiny cpu core with a safe enclave containing private data. Now, let&#x27;s see the details.&lt;&#x2F;p&gt;
+&lt;p&gt;We have some instructions:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;`define ADD  4&amp;#39;d0
+&lt;&#x2F;span&gt;&lt;span&gt;`define SUB  4&amp;#39;d1
+&lt;&#x2F;span&gt;&lt;span&gt;`define AND  4&amp;#39;d2
+&lt;&#x2F;span&gt;&lt;span&gt;`define OR   4&amp;#39;d3
+&lt;&#x2F;span&gt;&lt;span&gt;`define RES 4&amp;#39;d4
+&lt;&#x2F;span&gt;&lt;span&gt;`define MOVF 4&amp;#39;d5
+&lt;&#x2F;span&gt;&lt;span&gt;`define MOVT 4&amp;#39;d6
+&lt;&#x2F;span&gt;&lt;span&gt;`define ENT  4&amp;#39;d7
+&lt;&#x2F;span&gt;&lt;span&gt;`define EXT  4&amp;#39;d8
+&lt;&#x2F;span&gt;&lt;span&gt;`define JGT  4&amp;#39;d9
+&lt;&#x2F;span&gt;&lt;span&gt;`define JEQ  4&amp;#39;d10
+&lt;&#x2F;span&gt;&lt;span&gt;`define JMP  4&amp;#39;d11
+&lt;&#x2F;span&gt;&lt;span&gt;`define INC  4&amp;#39;d12
+&lt;&#x2F;span&gt;&lt;span&gt;`define MOVFS 4&amp;#39;d13
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Memory, registers:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;reg [7:0] safe_rom [0:255];
+&lt;&#x2F;span&gt;&lt;span&gt;reg [7:0] ram [0:255];
+&lt;&#x2F;span&gt;&lt;span&gt;reg [31:0] regfile [0:3];
+&lt;&#x2F;span&gt;&lt;span&gt;reg [31:0] key [0:0];
+&lt;&#x2F;span&gt;&lt;span&gt;reg emode;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And the &amp;quot;main function&amp;quot;:&lt;&#x2F;p&gt;
+&lt;pre style=&quot;background-color:#2b303b;color:#c0c5ce;&quot;&gt;&lt;code&gt;&lt;span&gt;initial
+&lt;&#x2F;span&gt;&lt;span&gt;begin: initial_block
+&lt;&#x2F;span&gt;&lt;span&gt;    &#x2F;&#x2F; $monitor(,$time,&amp;quot;: R0: %d,R1: %d,R2: %d,R3: %d&amp;quot;,regfile[0],regfile[1],regfile[2],regfile[3]);
+&lt;&#x2F;span&gt;&lt;span&gt;    init_regs();
+&lt;&#x2F;span&gt;&lt;span&gt;    emode = 0;
+&lt;&#x2F;span&gt;&lt;span&gt;    set_key();
+&lt;&#x2F;span&gt;&lt;span&gt;    &#x2F;&#x2F; $display(&amp;quot;key: %d&amp;quot;,key[0]);
+&lt;&#x2F;span&gt;&lt;span&gt;    load_safeROM();
+&lt;&#x2F;span&gt;&lt;span&gt;    load_ram();
+&lt;&#x2F;span&gt;&lt;span&gt;    &#x2F;&#x2F; $display(&amp;quot;A %h, B: %h&amp;quot;,safe_rom[0],safe_rom[1]);
+&lt;&#x2F;span&gt;&lt;span&gt;    #1500000;
+&lt;&#x2F;span&gt;&lt;span&gt;    print_res();
+&lt;&#x2F;span&gt;&lt;span&gt;    $finish;
+&lt;&#x2F;span&gt;&lt;span&gt;end :initial_block
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;What it does is it firstly zeros the registers and the special register called emode.
+Then it loads the key with a 32 bit &#x2F;dev&#x2F;urandom value, loads the flag.hex to safe_rom and ram.hex to ram.
+After that, it runs the code for some time and after that it prints out the last 64 bytes of the ram.&lt;&#x2F;p&gt;
+&lt;p&gt;So what we have to do is just copy the safe_rom to the ram to read the flag! However, the instruction we have to use, MOVFS, only works when emode is 1 and to do that using the instruction ENT, we have to guess the bottom 14 bits of the random key.&lt;&#x2F;p&gt;
+&lt;p&gt;Summing up, the pseudocode for what we have to do looks like this:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py3&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-py3 &quot;&gt;&lt;code class=&quot;language-py3&quot; data-lang=&quot;py3&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# bruteforce the key
+&lt;&#x2F;span&gt;&lt;span&gt;R0 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0
+&lt;&#x2F;span&gt;&lt;span&gt;R3 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span&gt;R3 == &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ent&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;    R0 += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# copy the flag from safe_rom to ram
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span&gt;i &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;range&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;64&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    ram[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;192 &lt;&#x2F;span&gt;&lt;span&gt;+ i] = safe_rom[i]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# loop in place so that we don&amp;#39;t execute the flag
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;True&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pass
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The problem is, however, that the MOVFS&#x2F;MOVT instructions only support direct addressing, so what we have to do is self-modifying code.&lt;&#x2F;p&gt;
+&lt;p&gt;This is the final pseudocode.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py3&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-py3 &quot;&gt;&lt;code class=&quot;language-py3&quot; data-lang=&quot;py3&quot;&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# bruteforce the key
+&lt;&#x2F;span&gt;&lt;span&gt;R0 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# the key value
+&lt;&#x2F;span&gt;&lt;span&gt;R2 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# for the loop
+&lt;&#x2F;span&gt;&lt;span&gt;R3 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# emode (0 - yes, 1 - no)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span&gt;R3 == R2:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ent&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;    R0 += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# copy the flag from safe_rom to ram
+&lt;&#x2F;span&gt;&lt;span&gt;R0 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0   &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# for copying bytes
+&lt;&#x2F;span&gt;&lt;span&gt;R1 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0   &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# safe_rom addr (for movfs)
+&lt;&#x2F;span&gt;&lt;span&gt;R2 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;192 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# ram addr (for movt)
+&lt;&#x2F;span&gt;&lt;span&gt;R3 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;64  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# for the loop
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span&gt;R1 &amp;lt; R3:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# move the byte
+&lt;&#x2F;span&gt;&lt;span&gt;    R0 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movfs&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# we save this instruction&amp;#39;s address as movfs_addr
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;192&lt;&#x2F;span&gt;&lt;span&gt;, R0) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# we save this instruction&amp;#39;s address as movt_addr
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# increase the counters
+&lt;&#x2F;span&gt;&lt;span&gt;    R1 += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;    R2 += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# modify the MOVFS&#x2F;MOVT instructions (only the 2nd byte as it holds the address)
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(movfs_addr + &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;, R1)
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(movt + &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;, R2)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# loop in place so that we interpret the flag as code (and potentially corrupt something)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;True&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;pass
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The implementation:&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;py3&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-py3 &quot;&gt;&lt;code class=&quot;language-py3&quot; data-lang=&quot;py3&quot;&gt;&lt;span&gt;R0 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0
+&lt;&#x2F;span&gt;&lt;span&gt;R1 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1
+&lt;&#x2F;span&gt;&lt;span&gt;R2 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;2
+&lt;&#x2F;span&gt;&lt;span&gt;R3 = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;3
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;ent&lt;&#x2F;span&gt;&lt;span&gt;():
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;7&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r1&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r2&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r3&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0 &lt;&#x2F;span&gt;&lt;span&gt;| (r1 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;) | (r2 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;6&lt;&#x2F;span&gt;&lt;span&gt;), r3]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;12 &lt;&#x2F;span&gt;&lt;span&gt;| (r &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;), &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;jeq&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r1&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r2&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;addr&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;10 &lt;&#x2F;span&gt;&lt;span&gt;| (r1 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;) | (r2 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;6&lt;&#x2F;span&gt;&lt;span&gt;), addr]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;jgt&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r1&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r2&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;addr&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;9 &lt;&#x2F;span&gt;&lt;span&gt;| (r1 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;) | (r2 &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;6&lt;&#x2F;span&gt;&lt;span&gt;), addr]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;jmp&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;addr&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;11&lt;&#x2F;span&gt;&lt;span&gt;, addr]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;movfs&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;addr&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;13 &lt;&#x2F;span&gt;&lt;span&gt;| (r &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;), addr]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fa1b3;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;addr&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;r&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;return &lt;&#x2F;span&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;6 &lt;&#x2F;span&gt;&lt;span&gt;| (r &amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span&gt;), addr]
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;code = []
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# bruteforce the key
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# set registers
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R3)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R2)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# the loop
+&lt;&#x2F;span&gt;&lt;span&gt;bruteforce_loop = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;len&lt;&#x2F;span&gt;&lt;span&gt;(code)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;ent&lt;&#x2F;span&gt;&lt;span&gt;()
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R0)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;jeq&lt;&#x2F;span&gt;&lt;span&gt;(R2, R3, bruteforce_loop)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# copy the flag from safe_rom to ram
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# set registers
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R0, R1, R1)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R2, R1, R1)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R3)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span&gt;i &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;range&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;6&lt;&#x2F;span&gt;&lt;span&gt;):
+&lt;&#x2F;span&gt;&lt;span&gt;    code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R3, R3, R3)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R2, R2, R3)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R2, R2, R3)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;add&lt;&#x2F;span&gt;&lt;span&gt;(R2, R2, R3)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# the loop
+&lt;&#x2F;span&gt;&lt;span&gt;copy_loop = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;len&lt;&#x2F;span&gt;&lt;span&gt;(code)
+&lt;&#x2F;span&gt;&lt;span&gt;movfs_addr = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;len&lt;&#x2F;span&gt;&lt;span&gt;(code)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movfs&lt;&#x2F;span&gt;&lt;span&gt;(R0, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;movt_addr = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;len&lt;&#x2F;span&gt;&lt;span&gt;(code)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;192&lt;&#x2F;span&gt;&lt;span&gt;, R0)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R1)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;inc&lt;&#x2F;span&gt;&lt;span&gt;(R2)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(movfs_addr + &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;, R1)
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;movt&lt;&#x2F;span&gt;&lt;span&gt;(movt_addr + &lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;, R2)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;jgt&lt;&#x2F;span&gt;&lt;span&gt;(R3, R1, copy_loop)
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#65737e;&quot;&gt;# the endless loop
+&lt;&#x2F;span&gt;&lt;span&gt;code += &lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;jmp&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;len&lt;&#x2F;span&gt;&lt;span&gt;(code))
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;with &lt;&#x2F;span&gt;&lt;span style=&quot;color:#96b5b4;&quot;&gt;open&lt;&#x2F;span&gt;&lt;span&gt;(&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;ram.hex&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;, &amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#a3be8c;&quot;&gt;wb&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;as &lt;&#x2F;span&gt;&lt;span&gt;f:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span&gt;c &lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span&gt;code:
+&lt;&#x2F;span&gt;&lt;span&gt;        f.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;write&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#b48ead;&quot;&gt;f&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;{c&lt;&#x2F;span&gt;&lt;span style=&quot;color:#d08770;&quot;&gt;:x&lt;&#x2F;span&gt;&lt;span&gt;} &amp;quot;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#bf616a;&quot;&gt;encode&lt;&#x2F;span&gt;&lt;span&gt;())
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;And the flag: &lt;code&gt;flag{d0nT_mESs_wiTh_tHe_sChLAmi}&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+</content>
+	</entry>
+</feed>

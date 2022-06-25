@@ -1,0 +1,415 @@
+<!doctype html><html><head><meta charset=UTF-8><meta content="IE=edge" http-equiv=X-UA-Compatible><meta content="width=device-width,initial-scale=1.0" name=viewport><title> rdk31's blog </title><link href=https://rdk31.com/fonts.css rel=stylesheet><script async data-goatcounter=https://rdk31.goatcounter.com/count src=https://rdk31.com/js/count.js></script><noscript><img src="https://rdk31.goatcounter.com//count?p=/posts/yauzactf2021-arc6969p2/&t=YauzaCTF 2021 - ARC6969 P.2"></noscript><link title="rdk31's blog" href=https://rdk31.com/atom.xml rel=alternate type=application/atom+xml><link href=https://rdk31.com/theme/light.css rel=stylesheet><link media="(prefers-color-scheme: dark)" href=https://rdk31.com/theme/dark.css rel=stylesheet><link href=https://rdk31.com/main.css media=screen rel=stylesheet><body><div class=content><header><div class=main><a href=https://rdk31.com>rdk31's blog</a></div><nav><a style="margin-left: 0.7em" href=/posts>/posts</a><a style="margin-left: 0.7em" href=/tags>/tags</a><a style="margin-left: 0.7em" href=/about>/about</a></nav></header><main><article><div class=title><div class=page-header>YauzaCTF 2021 - ARC6969 P.2<span style="font-size: 1.6em" class=primary-color>.</span></div><div class=meta>Posted on 2021-08-31</div></div><section class=body><h1 id=task-description>Task description</h1><p>The ARC6969 is an old and forgotten architecture used in a military computers during Cold War. Although we don't have the computers anymore, we got CPU manual and a few programs.<p><a href=files/manual_2.pdf>manual_2.pdf</a> <a href=files/rom_2.bin>rom_2.bin</a><h1 id=solution>Solution</h1><p>Now this CPU architecture is way more complicated than the first emulation task. It has 32 8bit registers, 4 flags (ZF, CF, SF and OF) and a 64x32 6bit color screen! The instructions are either 3 or 2 bytes (haven't noticed it at the beginning, lost me an hour).<p>This is the code.<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#b48ead;>import </span><span>pygame
+</span><span>
+</span><span>debug = </span><span style=color:#d08770;>False
+</span><span>
+</span><span>pixel_width = </span><span style=color:#d08770;>16
+</span><span>pixel_height = </span><span style=color:#d08770;>16
+</span><span>
+</span><span>width = </span><span style=color:#d08770;>64 </span><span>* pixel_width
+</span><span>height = </span><span style=color:#d08770;>32 </span><span>* pixel_height
+</span><span>
+</span><span>gpu_x = </span><span style=color:#d08770;>0
+</span><span>gpu_y = </span><span style=color:#d08770;>0
+</span><span>screen = pygame.display.</span><span style=color:#bf616a;>set_mode</span><span>((width, height))
+</span><span>
+</span><span>pc = </span><span style=color:#d08770;>0
+</span><span>regs = [</span><span style=color:#d08770;>0</span><span>] * </span><span style=color:#d08770;>32
+</span><span>fr = [</span><span style=color:#d08770;>False</span><span>] * </span><span style=color:#d08770;>8
+</span><span>halt = </span><span style=color:#d08770;>False
+</span><span>
+</span><span>serial_input = ""
+</span><span>
+</span><span>rom = </span><span style=color:#96b5b4;>open</span><span>("</span><span style=color:#a3be8c;>rom_1.bin</span><span>", "</span><span style=color:#a3be8c;>rb</span><span>").</span><span style=color:#bf616a;>read</span><span>()
+</span><span>ram = </span><span style=color:#bf616a;>bytearray</span><span>(rom) + </span><span style=color:#bf616a;>bytearray</span><span>([</span><span style=color:#d08770;>0</span><span>] * (</span><span style=color:#d08770;>0xFFFF </span><span>- </span><span style=color:#96b5b4;>len</span><span>(rom)))
+</span><span>
+</span><span style=color:#65737e;># print(rom[949 : 949 + 31])
+</span><span style=color:#65737e;># quit(0)
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>add</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] + regs[reg3]
+</span><span>    regs[reg1] &= </span><span style=color:#d08770;>0xFF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>add r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>addi</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    regs[reg1] = regs[reg2] + imm8
+</span><span>    regs[reg1] &= </span><span style=color:#d08770;>0xFF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>addi r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>sub</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] - regs[reg3]
+</span><span>    regs[reg1] &= </span><span style=color:#d08770;>0xFF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>sub r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>subi</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    regs[reg1] = regs[reg2] - imm8
+</span><span>    regs[reg1] &= </span><span style=color:#d08770;>0xFF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>subi r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>or_op</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] | regs[reg3]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>or r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>ori</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    regs[reg1] = regs[reg2] | imm8
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>ori r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>and_op</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] & regs[reg3]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>and r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>andi</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    regs[reg1] = regs[reg2] & imm8
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>andi r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>xor</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] ^ regs[reg3]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>xor r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>xori</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    regs[reg1] = regs[reg2] ^ imm8
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>xori r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>shl</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] << regs[reg3]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>shl r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>shr</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs
+</span><span>    reg3 &= </span><span style=color:#d08770;>0x1F
+</span><span>    regs[reg1] = regs[reg2] >> regs[reg3]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>shr r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>cmp</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs, fr
+</span><span>
+</span><span>    reg2 &= </span><span style=color:#d08770;>0x1F
+</span><span>
+</span><span>    fr[</span><span style=color:#d08770;>0</span><span>] = regs[reg1] == regs[reg2]  </span><span style=color:#65737e;># ZF
+</span><span>    fr[</span><span style=color:#d08770;>1</span><span>] = </span><span style=color:#96b5b4;>abs</span><span>(regs[reg1]) < </span><span style=color:#96b5b4;>abs</span><span>(regs[reg2])  </span><span style=color:#65737e;># CF
+</span><span>    fr[</span><span style=color:#d08770;>2</span><span>] = regs[reg1] - regs[reg2] < </span><span style=color:#d08770;>0  </span><span style=color:#65737e;># SF
+</span><span>    fr[</span><span style=color:#d08770;>3</span><span>] = regs[reg1] - regs[reg2] > </span><span style=color:#d08770;>255  </span><span style=color:#65737e;># OF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>cmp r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>cmpi</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>imm8</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>regs, fr
+</span><span>    fr[</span><span style=color:#d08770;>0</span><span>] = regs[reg1] == imm8  </span><span style=color:#65737e;># ZF
+</span><span>    fr[</span><span style=color:#d08770;>1</span><span>] = </span><span style=color:#96b5b4;>abs</span><span>(regs[reg1]) < </span><span style=color:#96b5b4;>abs</span><span>(imm8)  </span><span style=color:#65737e;># CF
+</span><span>    fr[</span><span style=color:#d08770;>2</span><span>] = regs[reg1] - imm8 < </span><span style=color:#d08770;>0  </span><span style=color:#65737e;># SF
+</span><span>    fr[</span><span style=color:#d08770;>3</span><span>] = regs[reg1] - imm8 > </span><span style=color:#d08770;>255  </span><span style=color:#65737e;># OF
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>cmpi r</span><span>{reg1} {imm8}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>call</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, regs
+</span><span>    regs[</span><span style=color:#d08770;>31</span><span>] = pc + </span><span style=color:#d08770;>3
+</span><span>    pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>call </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>ret</span><span>():
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, regs
+</span><span>    pc = regs[</span><span style=color:#d08770;>31</span><span>]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>("</span><span style=color:#a3be8c;>ret</span><span>")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jmp</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc
+</span><span>    pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>jmp </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>je</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>fr[</span><span style=color:#d08770;>0</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>je </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jne</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>not fr[</span><span style=color:#d08770;>0</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>jne </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jb</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>fr[</span><span style=color:#d08770;>1</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>jb </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jl</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>fr[</span><span style=color:#d08770;>2</span><span>] != fr[</span><span style=color:#d08770;>3</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>jl </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>jg</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>not fr[</span><span style=color:#d08770;>0</span><span>] and fr[</span><span style=color:#d08770;>2</span><span>] == fr[</span><span style=color:#d08770;>3</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>jg </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>ja</span><span>(</span><span style=color:#bf616a;>imm16</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, fr
+</span><span>    </span><span style=color:#b48ead;>if </span><span>not fr[</span><span style=color:#d08770;>0</span><span>] and not fr[</span><span style=color:#d08770;>1</span><span>]:
+</span><span>        pc = imm16
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>ja </span><span>{imm16}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>rd</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>ram, regs
+</span><span>    addr = regs[reg2] << </span><span style=color:#d08770;>8 </span><span>| regs[reg3]
+</span><span>    regs[reg1] = ram[addr]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>rd r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>wr</span><span>(</span><span style=color:#bf616a;>reg1</span><span>, </span><span style=color:#bf616a;>reg2</span><span>, </span><span style=color:#bf616a;>reg3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>ram, regs
+</span><span>    addr = regs[reg2] << </span><span style=color:#d08770;>8 </span><span>| regs[reg3]
+</span><span>    ram[addr] = regs[reg1]
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>wr r</span><span>{reg1}</span><span style=color:#a3be8c;> r</span><span>{reg2}</span><span style=color:#a3be8c;> r</span><span>{reg3}")
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>io</span><span>(</span><span style=color:#bf616a;>reg</span><span>, </span><span style=color:#bf616a;>imm3</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>screen, gpu_x, gpu_y, out, regs, halt, serial_input, c, debug
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>imm3 == </span><span style=color:#d08770;>1</span><span>:  </span><span style=color:#65737e;># IO GPU SET X
+</span><span>        gpu_x = regs[reg]
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>io gpu set x r</span><span>{reg}")
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>2</span><span>:  </span><span style=color:#65737e;># IO GPU SET Y
+</span><span>        gpu_y = regs[reg]
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>io gpu set y r</span><span>{reg}")
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>3</span><span>:  </span><span style=color:#65737e;># IO GPU DRAW
+</span><span>        val = regs[reg]
+</span><span>        red = </span><span style=color:#d08770;>85 </span><span>* (val >> </span><span style=color:#d08770;>4</span><span>)
+</span><span>        green = </span><span style=color:#d08770;>85 </span><span>* ((val >> </span><span style=color:#d08770;>2</span><span>) & </span><span style=color:#d08770;>3</span><span>)
+</span><span>        blue = </span><span style=color:#d08770;>85 </span><span>* (val & </span><span style=color:#d08770;>3</span><span>)
+</span><span>        color = (red, green, blue)
+</span><span>        pygame.draw.</span><span style=color:#bf616a;>rect</span><span>(
+</span><span>            screen,
+</span><span>            color,
+</span><span>            pygame.</span><span style=color:#bf616a;>Rect</span><span>(
+</span><span>                gpu_x * pixel_width, gpu_y * pixel_height, pixel_width, pixel_height
+</span><span>            ),
+</span><span>        )
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>("</span><span style=color:#a3be8c;>io gpu draw</span><span>")
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>4</span><span>:  </span><span style=color:#65737e;># IO GPU UPDATE
+</span><span>        pygame.display.</span><span style=color:#bf616a;>flip</span><span>()
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>("</span><span style=color:#a3be8c;>io gpu update</span><span>")
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>5</span><span>:  </span><span style=color:#65737e;># IO SERIAL LENGTH
+</span><span>        regs[reg] = </span><span style=color:#96b5b4;>len</span><span>(serial_input)
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>io serial length r</span><span>{reg}")
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>6</span><span>:  </span><span style=color:#65737e;># IO SERIAL READ
+</span><span>        </span><span style=color:#b48ead;>if </span><span>serial_input:
+</span><span>            regs[reg] = </span><span style=color:#96b5b4;>ord</span><span>(serial_input[</span><span style=color:#d08770;>0</span><span>])
+</span><span>            serial_input = serial_input[</span><span style=color:#d08770;>1</span><span>:]
+</span><span>
+</span><span>            </span><span style=color:#65737e;># debug = True
+</span><span>
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>io serial read r</span><span>{reg}")
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(regs)
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>imm3 == </span><span style=color:#d08770;>7</span><span>:  </span><span style=color:#65737e;># IO SERIAL WRITE
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#96b5b4;>chr</span><span>(regs[reg]), </span><span style=color:#bf616a;>end</span><span>="")
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"</span><span style=color:#a3be8c;>io serial write r</span><span>{reg}")
+</span><span>    </span><span style=color:#b48ead;>else</span><span>:
+</span><span>        halt = </span><span style=color:#d08770;>True
+</span><span>        </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>("</span><span style=color:#a3be8c;>halt</span><span>")
+</span><span>
+</span><span>
+</span><span>ops_arit = {
+</span><span>    </span><span style=color:#d08770;>0</span><span>: add,
+</span><span>    </span><span style=color:#d08770;>1</span><span>: addi,
+</span><span>    </span><span style=color:#d08770;>2</span><span>: sub,
+</span><span>    </span><span style=color:#d08770;>3</span><span>: subi,
+</span><span>    </span><span style=color:#d08770;>6</span><span>: or_op,
+</span><span>    </span><span style=color:#d08770;>7</span><span>: ori,
+</span><span>    </span><span style=color:#d08770;>8</span><span>: xor,
+</span><span>    </span><span style=color:#d08770;>9</span><span>: xori,
+</span><span>    </span><span style=color:#d08770;>10</span><span>: and_op,
+</span><span>    </span><span style=color:#d08770;>11</span><span>: andi,
+</span><span>    </span><span style=color:#d08770;>12</span><span>: shl,
+</span><span>    </span><span style=color:#d08770;>13</span><span>: shr,
+</span><span>}
+</span><span>
+</span><span>ops_comp = {
+</span><span>    </span><span style=color:#d08770;>4</span><span>: </span><span style=color:#96b5b4;>cmp</span><span>,
+</span><span>    </span><span style=color:#d08770;>5</span><span>: cmpi,
+</span><span>}
+</span><span>
+</span><span>ops_ctrl = {
+</span><span>    </span><span style=color:#d08770;>24</span><span>: call,
+</span><span>    </span><span style=color:#d08770;>25</span><span>: ret,
+</span><span>    </span><span style=color:#d08770;>16</span><span>: jmp,
+</span><span>    </span><span style=color:#d08770;>17</span><span>: je,
+</span><span>    </span><span style=color:#d08770;>18</span><span>: jne,
+</span><span>    </span><span style=color:#d08770;>19</span><span>: jb,
+</span><span>    </span><span style=color:#d08770;>20</span><span>: jl,
+</span><span>    </span><span style=color:#d08770;>26</span><span>: jg,
+</span><span>    </span><span style=color:#d08770;>27</span><span>: ja,
+</span><span>}
+</span><span>
+</span><span>ops_mem = {
+</span><span>    </span><span style=color:#d08770;>14</span><span>: rd,
+</span><span>    </span><span style=color:#d08770;>15</span><span>: wr,
+</span><span>}
+</span><span>
+</span><span>ops_io = {
+</span><span>    </span><span style=color:#d08770;>21</span><span>: io,
+</span><span>}
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>def </span><span style=color:#8fa1b3;>parse</span><span>(</span><span style=color:#bf616a;>op</span><span>):
+</span><span>    </span><span style=color:#b48ead;>global </span><span>pc, halt
+</span><span>
+</span><span>    x = int.</span><span style=color:#bf616a;>from_bytes</span><span>(op, </span><span style=color:#bf616a;>byteorder</span><span>="</span><span style=color:#a3be8c;>big</span><span>")
+</span><span>
+</span><span>    opcode = x >> </span><span style=color:#d08770;>19
+</span><span>
+</span><span>    </span><span style=color:#b48ead;>if </span><span>opcode in ops_arit:
+</span><span>        reg1 = (x >> </span><span style=color:#d08770;>13</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        reg2 = (x >> </span><span style=color:#d08770;>8</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        reg3imm = x & </span><span style=color:#d08770;>0xFF
+</span><span>        ops_arit[opcode](reg1, reg2, reg3imm)
+</span><span>
+</span><span>        pc += </span><span style=color:#d08770;>3
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>opcode in ops_comp:
+</span><span>        reg1 = (x >> </span><span style=color:#d08770;>11</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        reg2imm = x & </span><span style=color:#d08770;>0xFF
+</span><span>        ops_comp[opcode](reg1, reg2imm)
+</span><span>
+</span><span>        pc += </span><span style=color:#d08770;>3
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>opcode in ops_ctrl:
+</span><span>        imm16 = x & </span><span style=color:#d08770;>0xFFFF
+</span><span>        old_pc = pc
+</span><span>        ops_ctrl[opcode](imm16)
+</span><span>        </span><span style=color:#b48ead;>if </span><span>old_pc == pc:
+</span><span>            pc += </span><span style=color:#d08770;>3
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>opcode in ops_mem:
+</span><span>        reg1 = (x >> </span><span style=color:#d08770;>13</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        reg2 = (x >> </span><span style=color:#d08770;>8</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        reg3 = x & </span><span style=color:#d08770;>0x1F
+</span><span>        ops_mem[opcode](reg1, reg2, reg3)
+</span><span>
+</span><span>        pc += </span><span style=color:#d08770;>3
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>opcode in ops_io:
+</span><span>        reg1 = (x >> </span><span style=color:#d08770;>11</span><span>) & </span><span style=color:#d08770;>0x1F
+</span><span>        imm3 = (x >> </span><span style=color:#d08770;>8</span><span>) & </span><span style=color:#d08770;>7
+</span><span>        ops_io[opcode](reg1, imm3)
+</span><span>
+</span><span>        pc += </span><span style=color:#d08770;>2
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>opcode == </span><span style=color:#d08770;>23</span><span>:
+</span><span>        halt = </span><span style=color:#d08770;>True
+</span><span>    </span><span style=color:#b48ead;>else</span><span>:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(opcode)
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>("</span><span style=color:#a3be8c;>OP NOT FOUND</span><span>")
+</span><span>        halt = </span><span style=color:#d08770;>True
+</span><span>
+</span><span>
+</span><span style=color:#b48ead;>while </span><span>not halt:
+</span><span>    </span><span style=color:#b48ead;>if </span><span>debug:
+</span><span>        </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#b48ead;>f</span><span>"{pc</span><span style=color:#d08770;>:04</span><span>}</span><span style=color:#a3be8c;>: </span><span>", </span><span style=color:#bf616a;>end</span><span>="")
+</span><span>
+</span><span>    </span><span style=color:#bf616a;>parse</span><span>(ram[pc : pc + </span><span style=color:#d08770;>3</span><span>])
+</span><span>
+</span><span>    event = pygame.event.</span><span style=color:#bf616a;>poll</span><span>()
+</span><span>    </span><span style=color:#b48ead;>if </span><span>event.type == pygame.</span><span style=color:#bf616a;>QUIT</span><span>:
+</span><span>        halt = </span><span style=color:#d08770;>True
+</span><span>    </span><span style=color:#b48ead;>elif </span><span>event.type == pygame.</span><span style=color:#bf616a;>KEYDOWN</span><span>:
+</span><span>        </span><span style=color:#b48ead;>if </span><span>event.key in </span><span style=color:#96b5b4;>range</span><span>(pygame.K_a, pygame.K_z + </span><span style=color:#d08770;>1</span><span>):
+</span><span>            </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#96b5b4;>chr</span><span>(event.key))
+</span><span>
+</span><span>            serial_input += </span><span style=color:#96b5b4;>chr</span><span>(event.key)
+</span></code></pre><p>Running the emulator draws the flag:<p><img src=images/flag.png></section></article></main><div class=post-footer><div class=post-tags>tags: <a href=https://rdk31.com/tags/ctf/>#ctf</a><a href=https://rdk31.com/tags/embedded/>#embedded</a></div><div class=post-nav><a class=previous href=https://rdk31.com/posts/yauzactf2021-risc8bitcpu/>‹ YauzaCTF 2021 - RISC 8bit CPU</a><a class=next href=https://rdk31.com/posts/yauzactf2021-arc6969p1/>YauzaCTF 2021 - ARC6969 P.1 ›</a></div></div></div>

