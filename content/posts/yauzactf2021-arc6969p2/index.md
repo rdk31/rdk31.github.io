@@ -1,5 +1,5 @@
 +++
-title = "YauzaCTF 2021 - ARC6969 P.1"
+title = "YauzaCTF 2021 - ARC6969 P.2"
 date = 2021-08-31
 [taxonomies]
 tags = ["ctf", "embedded"]
@@ -9,8 +9,8 @@ tags = ["ctf", "embedded"]
 
 The ARC6969 is an old and forgotten architecture used in a military computers during Cold War. Although we don't have the computers anymore, we got CPU manual and a few programs.
 
-[manual_1.pdf](/files/yauzactf2021/arc6969p1/manual_1.pdf)
-[rom_1.bin](/files/yauzactf2021/arc6969p1/rom_1.bin)
+[manual_2.pdf](files/manual_2.pdf)
+[rom_2.bin](files/rom_2.bin)
 
 # Solution
 
@@ -435,97 +435,6 @@ while not halt:
             serial_input += chr(event.key)
 ```
 
-Running the emulator prints out:
+Running the emulator draws the flag:
 
-```
-Hello fellow komrade.
-Wanna capture the flag?
-Enter the key:
-```
-
-Entering the key (3 letters) the CPU prints out some random characters and halts.
-
-To proceed, I dumped the executed instructions after serial read op (line 299).
-
-```
-0904: io serial read r1
-0906: io serial read r0
-0908: io serial read r2
-0910: rd r6 r7 r8
-0913: shl r9 r6 r12
-0916: shr r10 r6 r11
-0919: or r6 r9 r10
-0922: add r6 r6 r1
-0925: xor r6 r6 r0
-0928: sub r6 r6 r2
-0931: io serial write r6
-0933: addi r8 r8 1
-0936: addi r8 r8 0
-0939: addi r4 r4 1
-0942: cmpi r4 31
-0945: jne 910
-```
-
-And the registers right after the last serial read.
-
-```
-[  0,   1,   2  3, 4,  5, 6, 7,   8, 9 10,11,12]
-[101, 121, 115, 0, 0, 11, 0, 3, 181, 0, 0, 2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-```
-
-Translating to pseudocode we get:
-
-```
-r1, r0, r2 - input
-r4 = 0
----
-while r4 != 31:
-    r6 = [949 + r4]
-    r9 = r6 << 6
-    r10 = r6 >> 2
-    r6 = r9 | r10
-
-    r6 += r1
-    r6 ^= r0
-    r6 -= r2
-    print r6
-
-    r4 += 1
-```
-
-Basically looping over an encrypted string doing addition, xor and subtraction on each letter.
-
-I dumped the encrypted string (lines 27 and 28) and bruteforced the key using this script.
-
-```py3
-from itertools import product
-from string import printable
-
-keywords = ["".join(i) for i in product(printable, repeat=3)]
-
-x = bytearray(
-    b"\x911\x01\r1\xcb\x85\xbf\xa8\xd7\x08\xe4\xe4\xf79=\xec\xf7\xe09\xf3\x10\xff\x109\xe8\xf3EE\xf7\xa0"
-)
-
-new_x = bytearray()
-
-for b in x:
-    new_x.append((b << 6 | b >> 2) & 0xFF)
-
-for key in keywords:
-    out = bytearray()
-    for b in new_x:
-        b += ord(key[0])
-        b ^= ord(key[1])
-        b -= ord(key[2])
-        out.append(b & 0xFF)
-
-    try:
-        out_str = out.decode()
-        if "YauzaCTF" in out_str:
-            print(key, out_str)
-    except:
-        pass
-```
-
-Running the script prints out the flag: `YauzaCTF{H3ll0_fr0m_1969_k1dd0}`
+![](images/flag.png)

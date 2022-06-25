@@ -63,7 +63,7 @@ The flag: `flag{l0c4l_f1l3_1nclusi0n_f0r_7h3_w1n}`
 
 Charlie forgot his password to login into his Office portal. Help him to find it. (This challenge was written for the person on your team who has never solved a binary exploitation challenge before! Welcome to pwning.)
 
-[password_checker](/files/csawctf2021/warm-up/password_checker)
+[password_checker](files/password_checker)
 
 ## Solution
 
@@ -165,7 +165,7 @@ The flag: `flag{ch4r1i3_4ppr3ci4t35_y0u_f0r_y0ur_h31p}`
 
 What's up with all the zeros and ones? Where are my letters and numbers? (This is a reversing challenge.)
 
-[checker.py](/files/csawctf2021/warm-up/checker.py)
+[checker.py](files/checker.py)
 
 ## Solution
 

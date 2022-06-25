@@ -11,8 +11,8 @@ tags = ["ctf", "fpga"]
 
 We have a very safe core with a very safe enclave.
 
-[ncore_tb.v](/files/csawctf2021/ncore/ncore_tb.v)
-[server.py](/files/csawctf2021/ncore/server.py)
+[ncore_tb.v](files/ncore_tb.v)
+[server.py](files/server.py)
 
 ## Solution
 

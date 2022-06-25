@@ -11,7 +11,7 @@ tags = ["ctf"]
 
 Brush off your Flirbgarple textbooks!
 
-[alien_math](/files/csawctf2021/alien_math)
+[alien_math](files/alien_math)
 
 ## Solution
 

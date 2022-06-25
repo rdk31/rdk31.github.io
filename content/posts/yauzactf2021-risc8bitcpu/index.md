@@ -9,8 +9,8 @@ tags = ["ctf"]
 
 The SFT0 CPU is a secure processor designed to store encryption key. Find out how the processor works and get the key.
 
-[manual.pdf](/files/yauzactf2021/risc8bitcpu/manual.pdf)
-[rom.bin](/files/yauzactf2021/risc8bitcpu/rom.bin)
+[manual.pdf](files/manual.pdf)
+[rom.bin](files/rom.bin)
 
 # Solution
 

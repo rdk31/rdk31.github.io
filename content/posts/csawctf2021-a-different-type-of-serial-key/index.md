@@ -13,8 +13,8 @@ Attached are serial captures of two different uploads to an embedded device. One
 
 Author: CISA
 
-[capture.sal](/files/csawctf2021/a-different-type-of-serial-key/capture.sal)
-[key.sal](/files/csawctf2021/a-different-type-of-serial-key/key.sal)
+[capture.sal](files/capture.sal)
+[key.sal](files/key.sal)
 
 ## Solution
 
@@ -22,11 +22,11 @@ Author: CISA
 
 Opening it up in Logic it looks like I2C with data (SDA) on channel 1 and clock (SCL) on channel 0.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/key.png)
+![](images/key.png)
 
 Applying the I2C analyzer confirms it.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/key-decoded.png)
+![](images/key-decoded.png)
 
 After exporting to csv we can extract the bytes using this simple python script:
 
@@ -43,15 +43,15 @@ with open("key.csv") as f:
 
 Opening it up in Logic we see two communications.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/capture-zoomed-out.png)
+![](images/capture-zoomed-out.png)
 
 Zooming in it looks like SPI with MOSI on channel 3, MISO on channel 2, clock on channel 0 and chip select on channel 1.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/capture.png)
+![](images/capture.png)
 
 Enabling the SPI analyzer confirms it.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/capture-decoded.png)
+![](images/capture-decoded.png)
 
 After exporting the data to csv, I manually splitted the file into two separate communications and using this script I turned them into binaries.
 
@@ -71,7 +71,7 @@ And indeed it does, `4C6F63616C204B6579B` translates to `Local Key.` and `506F77
 
 Let's try the second file in ghidra.
 
-![](/images/csawctf2021/a-different-type-of-serial-key/capture-ghidra.png)
+![](images/capture-ghidra.png)
 
 And this is the code ghidra decompiled:
 
