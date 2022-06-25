@@ -14,4 +14,4 @@ Links:
 
 The RSS feed is available [here](/atom.xml).
 
-Powered by [Zola](https://www.getzola.org) and modified [Apollo](https://github.com/not-matthias/apollo) theme.
+Powered by [Zola](https://www.getzola.org) and [modified Apollo theme](https://github.com/rdk31/apollo).
