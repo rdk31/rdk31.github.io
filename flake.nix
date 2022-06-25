@@ -14,7 +14,12 @@
           devShell = pkgs.mkShell {
             buildInputs = with pkgs; [
               zola
+              oxipng
             ];
+
+            shellHook = ''
+              alias optimize_image="oxipng -o max --strip all -a -Z"
+            '';
           };
         }
       );
