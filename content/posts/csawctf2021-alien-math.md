@@ -2,8 +2,7 @@
 title = "CSAW CTF Qualification Round 2021 - Alien Math"
 date = 2021-09-14
 [taxonomies]
-categories = ["ctfs"]
-tags = ["csawctf2021", "pwn"]
+tags = ["ctf"]
 +++
 
 # Alien Math

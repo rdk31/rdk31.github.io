@@ -2,8 +2,7 @@
 title = "YauzaCTF 2021 - ARC6969 P.1"
 date = 2021-08-31
 [taxonomies]
-categories = ["ctfs"]
-tags = ["yauzactf2021", "computer architecture", "python"]
+tags = ["ctf", "embedded"]
 +++
 
 # Task description

@@ -2,8 +2,7 @@
 title = "CSAW CTF Qualification Round 2021 - warm-up"
 date = 2021-09-13
 [taxonomies]
-categories = ["ctfs"]
-tags = ["csawctf2021"]
+tags = ["ctf"]
 +++
 
 # Turing

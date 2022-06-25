@@ -2,8 +2,7 @@
 title = "CSAW CTF Qualification Round 2021 - A Different Type of Serial Key"
 date = 2021-09-13
 [taxonomies]
-categories = ["ctfs"]
-tags = ["csawctf2021", "embedded"]
+tags = ["ctf", "embedded"]
 +++
 
 # A Different Type of Serial Key

@@ -2,8 +2,7 @@
 title = "YauzaCTF 2021 - RISC 8bit CPU"
 date = 2021-08-31
 [taxonomies]
-categories = ["ctfs"]
-tags = ["yauzactf2021", "computer architecture", "python"]
+tags = ["ctf"]
 +++
 
 # Task description

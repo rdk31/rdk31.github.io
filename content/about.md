@@ -4,7 +4,7 @@ path = "about"
 template = "about.html"
 +++
 
-Hi, we do hacking here.
+Hi, I'm rdk31.
 
 Links:
 
@@ -14,4 +14,4 @@ Links:
 
 The RSS feed is available [here](/atom.xml).
 
-Powered by [Zola](https://www.getzola.org) and [Even](https://github.com/getzola/even) (theme).
+Powered by [Zola](https://www.getzola.org) and modified [Apollo](https://github.com/not-matthias/apollo) theme.
