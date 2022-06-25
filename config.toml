@@ -23,3 +23,7 @@ menu = [
     { name = "/tags", url = "/tags", weight = 2 },
     { name = "/about", url = "/about", weight = 3 },
 ]
+
+[extra.analytics]
+enabled = true
+goatcounter_user = "rdk31"
